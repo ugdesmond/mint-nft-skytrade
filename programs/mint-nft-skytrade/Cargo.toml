@@ -1,8 +1,10 @@
 [package]
 name = "mint-nft-skytrade"
 version = "0.1.0"
-description = "Created with Anchor"
+description = "Sky trade nft collection mint"
 edition = "2021"
+authors = ["Ugochukwu Okoro <ugdesmond@gmail.com>"]
+
 
 [lib]
 crate-type = ["cdylib", "lib"]
@@ -16,5 +18,14 @@ cpi = ["no-entrypoint"]
 default = []
 
 [dependencies]
-anchor-lang = "0.27.0"
-solana-program = "=1.17.0"
+anchor-lang = { version = "0.26.0", features = ["init-if-needed"]}
+mpl-token-metadata = { version = "=1.9.0", features = ["no-entrypoint"] }
+solana-program = "=1.14.13"
+mpl-bubblegum = { version = "0.7.0", features=["cpi"] }
+winnow="=0.4.1"
+toml_datetime="=0.6.1"
+anchor-spl = {version = "0.26.0",features = ["metadata"]}
+spl-account-compression = { version="0.1.8", features = ["cpi"] }
+
+
+

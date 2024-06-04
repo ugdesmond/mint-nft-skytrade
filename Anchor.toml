@@ -2,14 +2,20 @@
 seeds = false
 skip-lint = false
 [programs.localnet]
-mint_nft_skytrade = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+mint_nft_skytrade = "G83Phrw4gCDCFZDpvhU9WtRrNPrxLMM24CaJG8QKNHC"
+
+[programs.devnet]
+mint_nft_skytrade = "AECLhMQ7QB11Ugxze54bQ535LL6V53RceEfPbBedzrSf"
+
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "devnet"
 wallet = "/Users/mac/.config/solana/id.json"
 
 [scripts]
 test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+
+
