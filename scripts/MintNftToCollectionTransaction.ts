@@ -20,7 +20,6 @@ import {
 } from '@solana/spl-account-compression';
 import { MintNftSkytrade } from '../target/types/mint_nft_skytrade';
 
-
 const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
 const provider = anchor.AnchorProvider.env();
 anchor.setProvider(provider);
@@ -33,7 +32,6 @@ const initialRetryDelayMs = 1000; // Initial delay before first retry in millise
 const retryBackoffFactor = 2; // Backoff factor for exponential backoff
 const maxRetryDelayMs = 5000; // Maximum delay between retries in milliseconds
 
-/
 async function sendTransactionWithRetry(
   tx: any
 ): Promise<TransactionSignature> {
@@ -76,14 +74,12 @@ async function sendTransactionWithRetry(
 
 async function mintNftToCollection(): Promise<void> {
   try {
-    
     const metaplex = Metaplex.make(connection).use(
       keypairIdentity(wallet.payer)
     );
-    
+
     const merkleTree = Keypair.generate();
 
-    
     const [treeAuthority] = PublicKey.findProgramAddressSync(
       [merkleTree.publicKey.toBuffer()],
       BUBBLEGUM_PROGRAM_ID
@@ -153,7 +149,6 @@ async function mintNftToCollection(): Promise<void> {
     console.error('An error occurred:', error);
   }
 }
-
 
 mintNftToCollection();
 
