@@ -17,7 +17,7 @@ use solana_program::pubkey::Pubkey;
 use spl_account_compression::{program::SplAccountCompression, Noop};
 
 
-declare_id!("AECLhMQ7QB11Ugxze54bQ535LL6V53RceEfPbBedzrSf");
+declare_id!("CLSTMbMhozbfgXkrAUkf94ikCScgt8zAW9ZCiEgPx6Hr");
 
 pub const SEED: &str = "AUTH";
 
@@ -82,7 +82,7 @@ pub mod mint_nft_skytrade {
             signer_seeds,
         );
 
-        mint_to_collection_v1(cpi_ctx, metadata)?;
+          mint_to_collection_v1(cpi_ctx, metadata)?;
 
         Ok(())
     }
@@ -129,9 +129,9 @@ pub struct MintNftToCollection<'info> {
     pub token_metadata_program: Program<'info, Metadata>,
     pub system_program: Program<'info, System>,
 
-    pub collection_mint: Account<'info, Mint>,
+    pub collection_mint: Box<Account<'info, Mint>>,
     #[account(mut)]
-    pub collection_metadata: Account<'info, MetadataAccount>,
+    pub collection_metadata: Box<Account<'info, MetadataAccount>>,
     /// CHECK:
     pub edition_account: UncheckedAccount<'info>,
 }

@@ -11,19 +11,9 @@ import { PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID } from '@metaplex-foundation/mp
 import {
   SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
   SPL_NOOP_PROGRAM_ID,
-  ValidDepthSizePair,
-  createAllocTreeIx,
 } from '@solana/spl-account-compression';
-import {
-  Connection,
-  Keypair,
-  PublicKey,
-  Transaction,
-  clusterApiUrl,
-  sendAndConfirmTransaction,
-} from '@solana/web3.js';
+import { Connection, Keypair, PublicKey, clusterApiUrl } from '@solana/web3.js';
 import { MintNftSkytrade } from '../target/types/mint_nft_skytrade';
-import { extractAssetId } from '../utils/utils';
 
 describe('mint-nft-skytrade', () => {
   const provider = anchor.AnchorProvider.env();
@@ -56,20 +46,13 @@ describe('mint-nft-skytrade', () => {
     BUBBLEGUM_PROGRAM_ID
   );
 
-  const maxDepthSizePair: ValidDepthSizePair = {
-    maxDepth: 14,
-    maxBufferSize: 64,
-  };
-  const canopyDepth = maxDepthSizePair.maxDepth - 5;
-
   const metadata = {
     uri: 'https://arweave.net/h19GMcMz7RLDY7kAHGWeWolHTmO83mLLMNPzEkF32BQ',
     name: 'SKY-TRADE',
-    symbol: 'SKY',
+    symbol: 'SKY-T',
   };
 
   let collectionNft: CreateNftOutput;
-  let assetId: PublicKey;
 
   before(async () => {
     // Create collection nft
@@ -87,63 +70,27 @@ describe('mint-nft-skytrade', () => {
       updateAuthority: wallet.payer,
       newUpdateAuthority: pda,
     });
-
-    // instruction to create new account with required space for tree
-    const allocTreeIx = await createAllocTreeIx(
-      connection,
-      merkleTree.publicKey,
-      wallet.publicKey,
-      maxDepthSizePair,
-      canopyDepth
-    );
-
-    const tx = new Transaction().add(allocTreeIx);
-
-    const txSignature = await sendAndConfirmTransaction(
-      connection,
-      tx,
-      [wallet.payer, merkleTree],
-      {
-        commitment: 'confirmed',
-      }
-    );
-    console.log(
-      `==============https://explorer.solana.com/tx/${txSignature}?cluster=devnet`
-    );
   });
 
   it('Mint  NFT with Metaplex Bubblegum standard', async () => {
-    try {
-      console.log('====minting nft====', collectionNft.metadataAddress);
-      const txSignature = await program.methods
-        .mintNft()
-        .accounts({
-          pda: pda,
-          merkleTree: merkleTree.publicKey,
-          treeAuthority: treeAuthority,
-          logWrapper: SPL_NOOP_PROGRAM_ID,
-          bubblegumSigner: bubblegumSigner,
-          bubblegumProgram: BUBBLEGUM_PROGRAM_ID,
-          compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
-          tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
-
-          collectionMint: collectionNft.mintAddress,
-          collectionMetadata: collectionNft.metadataAddress,
-          editionAccount: collectionNft.masterEditionAddress,
-        })
-        .rpc({ commitment: 'confirmed' });
-      console.log(
-        `>>>>>>>>>>>>>>>>.https://explorer.solana.com/tx/${txSignature}?cluster=devnet`
-      );
-
-      assetId = await extractAssetId(
-        connection,
-        txSignature,
-        merkleTree.publicKey,
-        program.programId
-      );
-    } catch (error) {
-      console.log('======error thrown=====', error);
-    }
+    const txSignature = await program.methods
+      .mintNft()
+      .accounts({
+        pda: pda,
+        merkleTree: merkleTree.publicKey,
+        treeAuthority: treeAuthority,
+        logWrapper: SPL_NOOP_PROGRAM_ID,
+        bubblegumSigner: bubblegumSigner,
+        bubblegumProgram: BUBBLEGUM_PROGRAM_ID,
+        compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
+        tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+        collectionMint: collectionNft.mintAddress,
+        collectionMetadata: collectionNft.metadataAddress,
+        editionAccount: collectionNft.masterEditionAddress,
+      })
+      .rpc({ commitment: 'confirmed' });
+    console.log(
+      `>>>>>>>>>>>>>>>>.https://explorer.solana.com/tx/${txSignature}?cluster=devnet`
+    );
   });
 });
