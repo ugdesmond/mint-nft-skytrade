@@ -11,8 +11,17 @@ import { PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID } from '@metaplex-foundation/mp
 import {
   SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
   SPL_NOOP_PROGRAM_ID,
+  ValidDepthSizePair,
+  createAllocTreeIx,
 } from '@solana/spl-account-compression';
-import { Connection, Keypair, PublicKey, clusterApiUrl } from '@solana/web3.js';
+import {
+  Connection,
+  Keypair,
+  PublicKey,
+  Transaction,
+  clusterApiUrl,
+  sendAndConfirmTransaction,
+} from '@solana/web3.js';
 import { MintNftSkytrade } from '../target/types/mint_nft_skytrade';
 
 describe('mint-nft-skytrade', () => {
@@ -45,6 +54,11 @@ describe('mint-nft-skytrade', () => {
     [Buffer.from('collection_cpi', 'utf8')],
     BUBBLEGUM_PROGRAM_ID
   );
+  const maxDepthSizePair: ValidDepthSizePair = {
+    maxDepth: 14,
+    maxBufferSize: 64,
+  };
+  const canopyDepth = maxDepthSizePair.maxDepth - 5;
 
   const metadata = {
     uri: 'https://arweave.net/h19GMcMz7RLDY7kAHGWeWolHTmO83mLLMNPzEkF32BQ',
@@ -56,6 +70,7 @@ describe('mint-nft-skytrade', () => {
 
   before(async () => {
     // Create collection nft
+    //Initialize collections
     collectionNft = await metaplex.nfts().create({
       uri: metadata.uri,
       name: metadata.name,
@@ -70,6 +85,27 @@ describe('mint-nft-skytrade', () => {
       updateAuthority: wallet.payer,
       newUpdateAuthority: pda,
     });
+
+    // instruction to create new account with required space for tree
+    const allocTreeIx = await createAllocTreeIx(
+      connection,
+      merkleTree.publicKey,
+      wallet.publicKey,
+      maxDepthSizePair,
+      canopyDepth
+    );
+
+    const tx = new Transaction().add(allocTreeIx);
+
+    const txSignature = await sendAndConfirmTransaction(
+      connection,
+      tx,
+      [wallet.payer, merkleTree],
+      {
+        commitment: 'confirmed',
+      }
+    );
+    console.log(`https://explorer.solana.com/tx/${txSignature}?cluster=devnet`);
   });
 
   it('Mint  NFT with Metaplex Bubblegum standard', async () => {

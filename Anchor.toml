@@ -2,10 +2,10 @@
 seeds = false
 skip-lint = false
 [programs.localnet]
-mint_nft_skytrade = "G83Phrw4gCDCFZDpvhU9WtRrNPrxLMM24CaJG8QKNHC"
+mint_nft_skytrade = "Ge87He7n627iPhk59xu23wtjsuEE5WbZbKJsmcc5iRRe"
 
 [programs.devnet]
-mint_nft_skytrade = "CLSTMbMhozbfgXkrAUkf94ikCScgt8zAW9ZCiEgPx6Hr"
+mint_nft_skytrade = "Ge87He7n627iPhk59xu23wtjsuEE5WbZbKJsmcc5iRRe"
 
 
 [registry]

@@ -17,7 +17,7 @@ use solana_program::pubkey::Pubkey;
 use spl_account_compression::{program::SplAccountCompression, Noop};
 
 
-declare_id!("CLSTMbMhozbfgXkrAUkf94ikCScgt8zAW9ZCiEgPx6Hr");
+declare_id!("Ge87He7n627iPhk59xu23wtjsuEE5WbZbKJsmcc5iRRe");
 
 pub const SEED: &str = "AUTH";
 
