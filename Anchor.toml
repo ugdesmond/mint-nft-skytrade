@@ -5,8 +5,7 @@ skip-lint = false
 mint_nft_skytrade = "Ge87He7n627iPhk59xu23wtjsuEE5WbZbKJsmcc5iRRe"
 
 [programs.devnet]
-mint_nft_skytrade = "Ge87He7n627iPhk59xu23wtjsuEE5WbZbKJsmcc5iRRe"
-
+mint_nft_skytrade = "EQojAAdyr3cDbGyhrzjN4V2fLAY6ZnJ8Xsxs9QApZLjh"
 
 [registry]
 url = "https://api.apr.dev"
