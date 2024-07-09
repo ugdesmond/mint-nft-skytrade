@@ -5,10 +5,14 @@ import {
   Metaplex,
   keypairIdentity,
 } from '@metaplex-foundation/js';
-import { PROGRAM_ID as BUBBLEGUM_PROGRAM_ID } from '@metaplex-foundation/mpl-bubblegum';
+import {
+  PROGRAM_ID as BUBBLEGUM_PROGRAM_ID,
+  createCreateTreeInstruction,
+} from '@metaplex-foundation/mpl-bubblegum';
 import { PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID } from '@metaplex-foundation/mpl-token-metadata';
 
 import {
+  ConcurrentMerkleTreeAccount,
   SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
   SPL_NOOP_PROGRAM_ID,
   ValidDepthSizePair,
@@ -21,10 +25,12 @@ import {
   Transaction,
   clusterApiUrl,
   sendAndConfirmTransaction,
+  SystemProgram
 } from '@solana/web3.js';
+import { assert } from 'chai';
 import { MintNftSkytrade } from '../target/types/mint_nft_skytrade';
 
-describe('mint-nft-skytrade', () => {
+describe('mint-nft-skytrade', () =>{
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
   const wallet = provider.wallet as anchor.Wallet;
@@ -94,6 +100,21 @@ describe('mint-nft-skytrade', () => {
       maxDepthSizePair,
       canopyDepth
     );
+    // const createTreeIx = createCreateTreeInstruction(
+    //   {
+    //     treeAuthority,
+    //     merkleTree: merkleTree.publicKey,
+    //     payer: wallet.publicKey,
+    //     treeCreator: wallet.publicKey,
+    //     logWrapper: SPL_NOOP_PROGRAM_ID,
+    //     compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
+    //   },
+    //   {
+    //     maxBufferSize: maxDepthSizePair.maxBufferSize,
+    //     maxDepth: maxDepthSizePair.maxDepth,
+    //     public: false,
+    //   }
+    // );
 
     const tx = new Transaction().add(allocTreeIx);
 
@@ -106,27 +127,72 @@ describe('mint-nft-skytrade', () => {
       }
     );
     console.log(`https://explorer.solana.com/tx/${txSignature}?cluster=devnet`);
+    console.log('Tree Address:', merkleTree.publicKey.toBase58());
+  });
+  it('Create Tree', async () => {
+    // create tree via CPI
+    console.log("====system program===",SystemProgram.programId)
+    try {
+      const txSignature = await program.methods
+        .anchorCreateTree(
+          maxDepthSizePair.maxDepth,
+          maxDepthSizePair.maxBufferSize
+        )
+        .accounts({
+          pda: pda,
+          merkleTree: merkleTree.publicKey,
+          treeAuthority: treeAuthority,
+          logWrapper: SPL_NOOP_PROGRAM_ID,
+          bubblegumProgram: BUBBLEGUM_PROGRAM_ID,
+          compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
+        })
+        .rpc({ commitment: 'confirmed' });
+      console.log(
+        `https://explorer.solana.com/tx/${txSignature}?cluster=devnet`
+      );
+      // fetch tree account
+      const treeAccount = await ConcurrentMerkleTreeAccount.fromAccountAddress(
+        connection,
+        merkleTree.publicKey
+      );
+      console.log('MaxBufferSize', treeAccount.getMaxBufferSize());
+      console.log('MaxDepth', treeAccount.getMaxDepth());
+      console.log('Tree Authority', treeAccount.getAuthority().toString());
+      assert.strictEqual(
+        treeAccount.getMaxBufferSize(),
+        maxDepthSizePair.maxBufferSize
+      );
+      assert.strictEqual(treeAccount.getMaxDepth(), maxDepthSizePair.maxDepth);
+      assert.isTrue(treeAccount.getAuthority().equals(treeAuthority));
+    } catch (error) {
+      console.log('=====error tree===', error);
+      throw error;
+    }
   });
 
-  it('Mint  NFT with Metaplex Bubblegum standard', async () => {
-    const txSignature = await program.methods
-      .mintNft()
-      .accounts({
-        pda: pda,
-        merkleTree: merkleTree.publicKey,
-        treeAuthority: treeAuthority,
-        logWrapper: SPL_NOOP_PROGRAM_ID,
-        bubblegumSigner: bubblegumSigner,
-        bubblegumProgram: BUBBLEGUM_PROGRAM_ID,
-        compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
-        tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
-        collectionMint: collectionNft.mintAddress,
-        collectionMetadata: collectionNft.metadataAddress,
-        editionAccount: collectionNft.masterEditionAddress,
-      })
-      .rpc({ commitment: 'confirmed' });
-    console.log(
-      `>>>>>>>>>>>>>>>>.https://explorer.solana.com/tx/${txSignature}?cluster=devnet`
-    );
-  });
+  // it('Mint  NFT with Metaplex Bubblegum standard', async () => {
+  //   try {
+  //     const txSignature = await program.methods
+  //       .mintNft()
+  //       .accounts({
+  //         pda: pda,
+  //         merkleTree: merkleTree.publicKey,
+  //         treeAuthority: treeAuthority,
+  //         logWrapper: SPL_NOOP_PROGRAM_ID,
+  //         bubblegumSigner: bubblegumSigner,
+  //         bubblegumProgram: BUBBLEGUM_PROGRAM_ID,
+  //         compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
+  //         tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+  //         collectionMint: collectionNft.mintAddress,
+  //         collectionMetadata: collectionNft.metadataAddress,
+  //         editionAccount: collectionNft.masterEditionAddress,
+  //       })
+  //       .rpc({ commitment: 'confirmed' });
+  //     console.log(
+  //       `>>>>>>>>>>>>>>>>.https://explorer.solana.com/tx/${txSignature}?cluster=devnet`
+  //     );
+  //   } catch (error) {
+  //     console.log('=====error occurred===', error);
+  //   }
+  // });
 });
