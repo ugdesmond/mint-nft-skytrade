@@ -21,7 +21,7 @@ default = []
 anchor-lang = { version = "0.26.0", features = ["init-if-needed"]}
 mpl-token-metadata = { version = "=1.9.0", features = ["no-entrypoint"] }
 solana-program = "=1.14.13"
-mpl-bubblegum = { version = "0.7.0", features=["cpi"] }
+mpl-bubblegum = { version = "1.2.0", features=["cpi"] }
 winnow="=0.4.1"
 toml_datetime="=0.6.1"
 anchor-spl = {version = "0.26.0",features = ["metadata"]}
