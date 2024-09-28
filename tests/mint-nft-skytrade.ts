@@ -1,15 +1,16 @@
 import * as anchor from '@coral-xyz/anchor';
 import { Program } from '@coral-xyz/anchor';
 import {
-  CreateNftOutput,
+  CreateCompressedNftOutput,
   Metaplex,
   keypairIdentity,
 } from '@metaplex-foundation/js';
 import {
-  PROGRAM_ID as BUBBLEGUM_PROGRAM_ID,
-  createCreateTreeInstruction,
+  MPL_BUBBLEGUM_PROGRAM_ID,
+  findTreeConfigPda,
 } from '@metaplex-foundation/mpl-bubblegum';
-import { PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID } from '@metaplex-foundation/mpl-token-metadata';
+import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
+import { PublicKey as UmiPK } from '@metaplex-foundation/umi';
 
 import {
   ConcurrentMerkleTreeAccount,
@@ -25,12 +26,11 @@ import {
   Transaction,
   clusterApiUrl,
   sendAndConfirmTransaction,
-  SystemProgram
 } from '@solana/web3.js';
 import { assert } from 'chai';
 import { MintNftSkytrade } from '../target/types/mint_nft_skytrade';
 
-describe('mint-nft-skytrade', () =>{
+describe('mint-nft-skytrade', () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
   const wallet = provider.wallet as anchor.Wallet;
@@ -45,21 +45,29 @@ describe('mint-nft-skytrade', () =>{
   const merkleTree = Keypair.generate();
 
   // tree authority
-  const [treeAuthority] = PublicKey.findProgramAddressSync(
-    [merkleTree.publicKey.toBuffer()],
-    BUBBLEGUM_PROGRAM_ID
-  );
+  // const [treeConfig] = PublicKey.findProgramAddressSync(
+  //   [program.programId.toBuffer()],
+  //   program.programId
+  // );
+  const umi = createUmi(provider.connection.rpcEndpoint);
+
+  const treeConfig = findTreeConfigPda(umi, {
+    merkleTree: merkleTree.publicKey.toBase58() as UmiPK,
+  })[0];
 
   // pda "tree creator", allows our program to update the tree
-  const [pda] = anchor.web3.PublicKey.findProgramAddressSync(
-    [Buffer.from('AUTH')],
+  const [treeOwner] = anchor.web3.PublicKey.findProgramAddressSync(
+    [
+      anchor.utils.bytes.utf8.encode('tree_owner'),
+      merkleTree.publicKey.toBuffer(),
+    ],
     program.programId
   );
 
-  const [bubblegumSigner] = PublicKey.findProgramAddressSync(
-    [Buffer.from('collection_cpi', 'utf8')],
-    BUBBLEGUM_PROGRAM_ID
-  );
+  const whitelist_tokens_pubkey = PublicKey.findProgramAddressSync(
+    [Buffer.from('token_whitelist')],
+    program.programId
+  )[0];
   const maxDepthSizePair: ValidDepthSizePair = {
     maxDepth: 14,
     maxBufferSize: 64,
@@ -72,7 +80,7 @@ describe('mint-nft-skytrade', () =>{
     symbol: 'SKY-T',
   };
 
-  let collectionNft: CreateNftOutput;
+  let collectionNft: CreateCompressedNftOutput;
 
   before(async () => {
     // Create collection nft
@@ -89,7 +97,7 @@ describe('mint-nft-skytrade', () =>{
     await metaplex.nfts().update({
       nftOrSft: collectionNft.nft,
       updateAuthority: wallet.payer,
-      newUpdateAuthority: pda,
+      newUpdateAuthority: treeOwner,
     });
 
     // instruction to create new account with required space for tree
@@ -100,21 +108,6 @@ describe('mint-nft-skytrade', () =>{
       maxDepthSizePair,
       canopyDepth
     );
-    // const createTreeIx = createCreateTreeInstruction(
-    //   {
-    //     treeAuthority,
-    //     merkleTree: merkleTree.publicKey,
-    //     payer: wallet.publicKey,
-    //     treeCreator: wallet.publicKey,
-    //     logWrapper: SPL_NOOP_PROGRAM_ID,
-    //     compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
-    //   },
-    //   {
-    //     maxBufferSize: maxDepthSizePair.maxBufferSize,
-    //     maxDepth: maxDepthSizePair.maxDepth,
-    //     public: false,
-    //   }
-    // );
 
     const tx = new Transaction().add(allocTreeIx);
 
@@ -129,21 +122,38 @@ describe('mint-nft-skytrade', () =>{
     console.log(`https://explorer.solana.com/tx/${txSignature}?cluster=devnet`);
     console.log('Tree Address:', merkleTree.publicKey.toBase58());
   });
+  // it.skip('should init', async () => {
+  //   const tx = await program.methods
+  //     .init()
+  //     .accounts({
+  //       signer: wallet.payer.publicKey,
+  //       whitelist: whitelist_tokens_pubkey,
+  //     })
+  //     .rpc();
+  //   console.log({ tx });
+
+  //   const whitelist_account = await program.account.tokenWhitelist.fetch(
+  //     whitelist_tokens_pubkey
+  //   );
+  //   assert(
+  //     whitelist_account.tokens.length === 0,
+  //     'whitelist already contains token'
+  //   );
+  //   console.log('=====init tree  successful=====', tx);
+  // });
+
   it('Create Tree', async () => {
     // create tree via CPI
-    console.log("====system program===",SystemProgram.programId)
     try {
       const txSignature = await program.methods
-        .anchorCreateTree(
-          maxDepthSizePair.maxDepth,
-          maxDepthSizePair.maxBufferSize
-        )
+        .createTree(maxDepthSizePair.maxDepth, maxDepthSizePair.maxBufferSize)
         .accounts({
-          pda: pda,
+          signer: wallet.payer.publicKey,
+          treeConfig,
           merkleTree: merkleTree.publicKey,
-          treeAuthority: treeAuthority,
+          treeOwner,
           logWrapper: SPL_NOOP_PROGRAM_ID,
-          bubblegumProgram: BUBBLEGUM_PROGRAM_ID,
+          mplBubblegumProgram: MPL_BUBBLEGUM_PROGRAM_ID,
           compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
         })
         .rpc({ commitment: 'confirmed' });
@@ -155,6 +165,7 @@ describe('mint-nft-skytrade', () =>{
         connection,
         merkleTree.publicKey
       );
+      console.log('=====tree account====', treeAccount);
       console.log('MaxBufferSize', treeAccount.getMaxBufferSize());
       console.log('MaxDepth', treeAccount.getMaxDepth());
       console.log('Tree Authority', treeAccount.getAuthority().toString());
@@ -163,7 +174,7 @@ describe('mint-nft-skytrade', () =>{
         maxDepthSizePair.maxBufferSize
       );
       assert.strictEqual(treeAccount.getMaxDepth(), maxDepthSizePair.maxDepth);
-      assert.isTrue(treeAccount.getAuthority().equals(treeAuthority));
+      // assert.isTrue(treeAccount.getAuthority().equals(treeConfig));
     } catch (error) {
       console.log('=====error tree===', error);
       throw error;

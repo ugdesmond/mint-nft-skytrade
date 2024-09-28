@@ -4,6 +4,8 @@ version = "0.1.0"
 description = "Sky trade nft collection mint"
 edition = "2021"
 authors = ["Ugochukwu Okoro <ugdesmond@gmail.com>"]
+rust-version = "1.75"
+
 
 
 [lib]
@@ -17,15 +19,14 @@ no-log-ix-name = []
 cpi = ["no-entrypoint"]
 default = []
 
+
 [dependencies]
-anchor-lang = { version = "0.26.0", features = ["init-if-needed"]}
-mpl-token-metadata = { version = "=1.9.0", features = ["no-entrypoint"] }
-solana-program = "=1.14.13"
-mpl-bubblegum = { version = "1.2.0", features=["cpi"] }
-winnow="=0.4.1"
-toml_datetime="=0.6.1"
-anchor-spl = {version = "0.26.0",features = ["metadata"]}
-spl-account-compression = { version="0.1.8", features = ["cpi"] }
+anchor-lang = { version = "0.29.0", features = ["init-if-needed"] }
+mpl-bubblegum = "1.2.0"
+anchor-spl = "0.29.0"
+spl-account-compression = { version = "0.3.0", features = ["cpi"] }
+
+
 
 
 
