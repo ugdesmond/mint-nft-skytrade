@@ -11,6 +11,7 @@ import {
 } from '@metaplex-foundation/mpl-bubblegum';
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { PublicKey as UmiPK } from '@metaplex-foundation/umi';
+import { PROGRAM_ID as TOKEN_METADATA_PROGRAM_ID } from '@metaplex-foundation/mpl-token-metadata';
 
 import {
   ConcurrentMerkleTreeAccount,
@@ -44,11 +45,6 @@ describe('mint-nft-skytrade', () => {
   // keypair for tree
   const merkleTree = Keypair.generate();
 
-  // tree authority
-  // const [treeConfig] = PublicKey.findProgramAddressSync(
-  //   [program.programId.toBuffer()],
-  //   program.programId
-  // );
   const umi = createUmi(provider.connection.rpcEndpoint);
 
   const treeConfig = findTreeConfigPda(umi, {
@@ -64,10 +60,17 @@ describe('mint-nft-skytrade', () => {
     program.programId
   );
 
-  const whitelist_tokens_pubkey = PublicKey.findProgramAddressSync(
-    [Buffer.from('token_whitelist')],
+  const centralAuthority = PublicKey.findProgramAddressSync(
+    [Buffer.from('central_authority')],
     program.programId
   )[0];
+
+  const [bubblegumSigner, _] = PublicKey.findProgramAddressSync(
+    // `collection_cpi` is a custom prefix required by the Bubblegum program
+    [Buffer.from('collection_cpi', 'utf8')],
+    new anchor.web3.PublicKey(MPL_BUBBLEGUM_PROGRAM_ID)
+  );
+
   const maxDepthSizePair: ValidDepthSizePair = {
     maxDepth: 14,
     maxBufferSize: 64,
@@ -92,6 +95,7 @@ describe('mint-nft-skytrade', () => {
       sellerFeeBasisPoints: 0,
       isCollection: true,
     });
+    console.log('====nft location====', collectionNft.mintAddress);
 
     // transfer collection nft metadata update authority to pda
     await metaplex.nfts().update({
@@ -122,88 +126,64 @@ describe('mint-nft-skytrade', () => {
     console.log(`https://explorer.solana.com/tx/${txSignature}?cluster=devnet`);
     console.log('Tree Address:', merkleTree.publicKey.toBase58());
   });
-  // it.skip('should init', async () => {
-  //   const tx = await program.methods
-  //     .init()
-  //     .accounts({
-  //       signer: wallet.payer.publicKey,
-  //       whitelist: whitelist_tokens_pubkey,
-  //     })
-  //     .rpc();
-  //   console.log({ tx });
-
-  //   const whitelist_account = await program.account.tokenWhitelist.fetch(
-  //     whitelist_tokens_pubkey
-  //   );
-  //   assert(
-  //     whitelist_account.tokens.length === 0,
-  //     'whitelist already contains token'
-  //   );
-  //   console.log('=====init tree  successful=====', tx);
-  // });
 
   it('Create Tree', async () => {
     // create tree via CPI
-    try {
-      const txSignature = await program.methods
-        .createTree(maxDepthSizePair.maxDepth, maxDepthSizePair.maxBufferSize)
-        .accounts({
-          signer: wallet.payer.publicKey,
-          treeConfig,
-          merkleTree: merkleTree.publicKey,
-          treeOwner,
-          logWrapper: SPL_NOOP_PROGRAM_ID,
-          mplBubblegumProgram: MPL_BUBBLEGUM_PROGRAM_ID,
-          compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
-        })
-        .rpc({ commitment: 'confirmed' });
-      console.log(
-        `https://explorer.solana.com/tx/${txSignature}?cluster=devnet`
-      );
-      // fetch tree account
-      const treeAccount = await ConcurrentMerkleTreeAccount.fromAccountAddress(
-        connection,
-        merkleTree.publicKey
-      );
-      console.log('=====tree account====', treeAccount);
-      console.log('MaxBufferSize', treeAccount.getMaxBufferSize());
-      console.log('MaxDepth', treeAccount.getMaxDepth());
-      console.log('Tree Authority', treeAccount.getAuthority().toString());
-      assert.strictEqual(
-        treeAccount.getMaxBufferSize(),
-        maxDepthSizePair.maxBufferSize
-      );
-      assert.strictEqual(treeAccount.getMaxDepth(), maxDepthSizePair.maxDepth);
-      // assert.isTrue(treeAccount.getAuthority().equals(treeConfig));
-    } catch (error) {
-      console.log('=====error tree===', error);
-      throw error;
-    }
+    const txSignature = await program.methods
+      .createTree(maxDepthSizePair.maxDepth, maxDepthSizePair.maxBufferSize)
+      .accounts({
+        signer: wallet.payer.publicKey,
+        treeConfig,
+        merkleTree: merkleTree.publicKey,
+        treeOwner,
+        logWrapper: SPL_NOOP_PROGRAM_ID,
+        mplBubblegumProgram: MPL_BUBBLEGUM_PROGRAM_ID,
+        compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
+      })
+      .rpc({ commitment: 'confirmed' });
+    console.log(`https://explorer.solana.com/tx/${txSignature}?cluster=devnet`);
+    // fetch tree account
+    const treeAccount = await ConcurrentMerkleTreeAccount.fromAccountAddress(
+      connection,
+      merkleTree.publicKey
+    );
+
+    console.log('MaxBufferSize', treeAccount.getMaxBufferSize());
+    console.log('MaxDepth', treeAccount.getMaxDepth());
+    console.log('Tree Authority', treeAccount.getAuthority().toString());
+    assert.strictEqual(
+      treeAccount.getMaxBufferSize(),
+      maxDepthSizePair.maxBufferSize
+    );
+    assert.strictEqual(treeAccount.getMaxDepth(), maxDepthSizePair.maxDepth);
   });
 
-  // it('Mint  NFT with Metaplex Bubblegum standard', async () => {
-  //   try {
-  //     const txSignature = await program.methods
-  //       .mintNft()
-  //       .accounts({
-  //         pda: pda,
-  //         merkleTree: merkleTree.publicKey,
-  //         treeAuthority: treeAuthority,
-  //         logWrapper: SPL_NOOP_PROGRAM_ID,
-  //         bubblegumSigner: bubblegumSigner,
-  //         bubblegumProgram: BUBBLEGUM_PROGRAM_ID,
-  //         compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
-  //         tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
-  //         collectionMint: collectionNft.mintAddress,
-  //         collectionMetadata: collectionNft.metadataAddress,
-  //         editionAccount: collectionNft.masterEditionAddress,
-  //       })
-  //       .rpc({ commitment: 'confirmed' });
-  //     console.log(
-  //       `>>>>>>>>>>>>>>>>.https://explorer.solana.com/tx/${txSignature}?cluster=devnet`
-  //     );
-  //   } catch (error) {
-  //     console.log('=====error occurred===', error);
-  //   }
-  // });
+  it('Mints a cnft to an existing tree and collection', async () => {
+    // NFT metadata
+    const name = 'KONNA';
+    const symbol = 'KNA';
+    const uri =
+      'https://arweave.net/Apu1g7uhv52CMeQNfevoody9dVDmaWtQ3TklI6cbNRM';
+    const sellerFeeBasisPoints = 0;
+
+    const tx = await program.methods
+      .mintCnft(name, symbol, uri, sellerFeeBasisPoints)
+      .accounts({
+        treeConfig,
+        leafOwner: wallet.publicKey,
+        merkleTree: merkleTree.publicKey,
+        centralAuthority: treeOwner,
+        collectionMint: collectionNft.mintAddress,
+        collectionMetadata: collectionNft.metadataAddress,
+        editionAccount: collectionNft.masterEditionAddress,
+        bubblegumSigner,
+        logWrapper: SPL_NOOP_PROGRAM_ID,
+        compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
+        tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+        bubblegumProgram: MPL_BUBBLEGUM_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .rpc({ commitment: 'confirmed' });
+    console.log(`https://explorer.solana.com/tx/${tx}?cluster=devnet`);
+  });
 });

@@ -6,7 +6,7 @@ mod errors;
 use anchor_lang::prelude::*;
 use crate::instructions::*;
 
-declare_id!("3FngfXDHHK2hKhswQKbbtVhi6EHUn1NSgGi2uxEud66E");
+declare_id!("GVuVDuqG1ACD5Y9SoW8wgGz1f2yNuUVdmpQMg63JmtQT");
 
 #[derive(Clone)]
 pub struct MplBubblegum;
@@ -36,8 +36,8 @@ pub mod mint_nft_skytrade {
         instructions::delist_token(ctx)
     }
 
-    pub fn mint_cnft(ctx: Context<MintCNFT>, symbol: String) -> Result<()> {
-        instructions::mint_cnft(ctx, symbol)
+    pub fn mint_cnft(ctx: Context<MintCNFT>,name: String,symbol: String, uri: String,seller_fee_basis_points: u16) -> Result<()> {
+        instructions::mint_cnft(ctx,name, symbol,uri,seller_fee_basis_points,)
     }
 
     pub fn burn_cnft<'info>(ctx: Context<'_, '_, '_, 'info, BurnCNFT<'info>>,
