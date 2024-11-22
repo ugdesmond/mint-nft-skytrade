@@ -7,15 +7,7 @@ use anchor_spl::{
     metadata::{Metadata}
 };
 
-// #[account]
-// pub struct CentralStateData {
-//     pub collection_address: Pubkey,
-//     pub merkle_tree_address: Option<Pubkey>,
-// }
 
-// impl CentralStateData {
-//     pub const MAX_SIZE: usize = 32 * 3;
-// }
 
 #[derive(Accounts)]
 pub struct MintCNFT<'info> {

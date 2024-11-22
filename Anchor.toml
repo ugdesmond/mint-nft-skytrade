@@ -2,10 +2,10 @@
 seeds = false
 skip-lint = false
 [programs.localnet]
-mint_nft_skytrade = "GVuVDuqG1ACD5Y9SoW8wgGz1f2yNuUVdmpQMg63JmtQT"
+mint_nft_skytrade = "6J3F9s5R11gAg6CQUjYfTKDi2WStJ73nmrcfKfWTYWKY"
 
 [programs.devnet]
-mint_nft_skytrade = "GVuVDuqG1ACD5Y9SoW8wgGz1f2yNuUVdmpQMg63JmtQT"
+mint_nft_skytrade = "6J3F9s5R11gAg6CQUjYfTKDi2WStJ73nmrcfKfWTYWKY"
 
 [registry]
 url = "https://api.apr.dev"

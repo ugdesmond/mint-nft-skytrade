@@ -1,75 +1,78 @@
-import { getLeafAssetId } from '@metaplex-foundation/mpl-bubblegum';
 import {
-  SPL_NOOP_PROGRAM_ID,
-  deserializeChangeLogEventV1,
-} from '@solana/spl-account-compression';
-import { Connection, PublicKey } from '@solana/web3.js';
-import BN from 'bn.js';
-import base58 from 'bs58';
-import fetch from 'node-fetch';
+  findLeafAssetIdPda,
+  getAssetWithProof,
+} from '@metaplex-foundation/mpl-bubblegum';
+import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
+import { PublicKey } from '@metaplex-foundation/umi';
 import dotenv from 'dotenv';
+import { dasApi } from '@metaplex-foundation/digital-asset-standard-api';
+import { PublicKey as PublicK } from '@solana/web3.js';
+const bs58 = require('bs58').default;
+
 dotenv.config();
 
-export async function extractAssetId(
-  connection: Connection,
-  txSignature: string,
-  treeAddress: PublicKey,
-  programId: PublicKey
-) {
-  // Get the transaction info using the tx signature
-  const txInfo = await connection.getTransaction(txSignature, {
-    maxSupportedTransactionVersion: 0,
-  });
-
-  // Function to check the program Id of an instruction
-  const isProgramId = (instruction, programId) =>
-    txInfo?.transaction.message.staticAccountKeys[
-      instruction.programIdIndex
-    ].toBase58() === programId;
-
-  // Find the index of the program instruction
-  const relevantIndex =
-    txInfo!.transaction.message.compiledInstructions.findIndex((instruction) =>
-      isProgramId(instruction, programId.toBase58())
-    );
-
-  // If there's no matching instruction, exit
-  if (relevantIndex < 0) {
-    return;
-  }
-
-  // Get the inner instructions related to the program instruction
-  const relevantInnerInstructions =
-    txInfo!.meta?.innerInstructions?.[relevantIndex].instructions;
-
-  // Filter out the instructions that aren't no-ops
-  const relevantInnerIxs = relevantInnerInstructions.filter((instruction) =>
-    isProgramId(instruction, SPL_NOOP_PROGRAM_ID.toBase58())
-  );
-
-  // Locate the asset index by attempting to locate and parse the correct `relevantInnerIx`
-  let assetIndex;
-  // Note: the `assetIndex` is expected to be at position `1`, and we normally expect only 2 `relevantInnerIx`
-  for (let i = relevantInnerIxs.length - 1; i >= 0; i--) {
+export class AssetExtractor {
+  // Method to extract the asset ID
+  public async extractAssetId(leafIndex: number, merkleTree: PublicKey) {
     try {
-      // Try to decode and deserialize the instruction
-      const changeLogEvent = deserializeChangeLogEventV1(
-        Buffer.from(base58.decode(relevantInnerIxs[i]?.data!))
+      const umi = createUmi(
+        `https://devnet.helius-rpc.com/?api-key=${process.env.RPC_URL}`
       );
+      umi.use(dasApi());
 
-      // extract a successful changelog index
-      assetIndex = changeLogEvent?.index;
+      const [assetId, bump] = findLeafAssetIdPda(umi, {
+        merkleTree,
+        leafIndex,
+      });
 
-      // If we got a valid index, no need to continue the loop
-      if (assetIndex !== undefined) {
-        break;
+      const rpcAsset = await umi.rpc.getAsset(assetId);
+
+      if (!rpcAsset) {
+        throw new Error('Asset not found');
       }
-    } catch (__) {}
+
+      return { assetId, rpcAsset };
+    } catch (error) {
+      console.error('Error extracting asset ID:', error);
+      throw new Error(
+        `Failed to extract asset ID: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      );
+    }
   }
 
-  const assetId = await getLeafAssetId(treeAddress, new BN(assetIndex));
+  public async getAssetProof(assetId: PublicKey) {
+    const umi = createUmi(
+      `https://devnet.helius-rpc.com/?api-key=${process.env.RPC_URL}`
+    );
+    umi.use(dasApi());
 
-  console.log('Asset ID:', assetId.toBase58());
+    const assetwithProof = getAssetWithProof(umi, assetId);
+    return assetwithProof;
+  }
 
-  return assetId;
+  public mapProof(assetProof: { proof: string[] }) {
+    if (!assetProof.proof || assetProof.proof.length === 0) {
+      throw new Error('Proof is empty');
+    }
+    // Ensure proof is in correct order (from leaf to root)
+    const orderedProof = [...assetProof.proof];
+
+    return orderedProof.map((node) => ({
+      pubkey: new PublicK(node),
+      isSigner: false,
+      isWritable: false,
+    }));
+  }
+  public decode(stuff: string) {
+    return this.bufferToArray(bs58.decode(stuff));
+  }
+  bufferToArray(buffer: Buffer): number[] {
+    const nums: number[] = [];
+    for (let i = 0; i < buffer.length; i++) {
+      nums.push(buffer[i]);
+    }
+    return nums;
+  }
 }

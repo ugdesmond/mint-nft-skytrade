@@ -544,6 +544,17 @@
     "@solana/web3.js" "^1.56.2"
     bn.js "^5.2.0"
 
+"@metaplex-foundation/mpl-bubblegum@4.2.1":
+  version "4.2.1"
+  resolved "https://registry.yarnpkg.com/@metaplex-foundation/mpl-bubblegum/-/mpl-bubblegum-4.2.1.tgz#248969b2a7e8d892113f4e2fc53608b4117cb67f"
+  integrity sha512-r9kHrVmkzJApbXwd7cmJyO0mAV3qsJaTjv5ks6PUT1Bzjj9QCvlJYg2UYQJLUTcrY5TjE9wXLpwUqNgllXH/Cw==
+  dependencies:
+    "@metaplex-foundation/digital-asset-standard-api" "^1.0.4"
+    "@metaplex-foundation/mpl-token-metadata" "3.2.1"
+    "@metaplex-foundation/mpl-toolbox" "^0.9.0"
+    "@noble/hashes" "^1.3.1"
+    merkletreejs "^0.3.9"
+
 "@metaplex-foundation/mpl-bubblegum@^0.6.2":
   version "0.6.2"
   resolved "https://registry.yarnpkg.com/@metaplex-foundation/mpl-bubblegum/-/mpl-bubblegum-0.6.2.tgz#e1b098ccef10899b0d759a03e3d4b1ae7bdc9f0c"
@@ -558,17 +569,6 @@
     "@solana/web3.js" "^1.50.1"
     bn.js "^5.2.0"
     js-sha3 "^0.8.0"
-
-"@metaplex-foundation/mpl-bubblegum@^4.2.1":
-  version "4.2.1"
-  resolved "https://registry.yarnpkg.com/@metaplex-foundation/mpl-bubblegum/-/mpl-bubblegum-4.2.1.tgz#248969b2a7e8d892113f4e2fc53608b4117cb67f"
-  integrity sha512-r9kHrVmkzJApbXwd7cmJyO0mAV3qsJaTjv5ks6PUT1Bzjj9QCvlJYg2UYQJLUTcrY5TjE9wXLpwUqNgllXH/Cw==
-  dependencies:
-    "@metaplex-foundation/digital-asset-standard-api" "^1.0.4"
-    "@metaplex-foundation/mpl-token-metadata" "3.2.1"
-    "@metaplex-foundation/mpl-toolbox" "^0.9.0"
-    "@noble/hashes" "^1.3.1"
-    merkletreejs "^0.3.9"
 
 "@metaplex-foundation/mpl-candy-guard@^0.3.0":
   version "0.3.2"
@@ -757,7 +757,7 @@
   dependencies:
     buffer "^6.0.3"
 
-"@metaplex-foundation/umi@^0.9.1":
+"@metaplex-foundation/umi@^0.9.2":
   version "0.9.2"
   resolved "https://registry.yarnpkg.com/@metaplex-foundation/umi/-/umi-0.9.2.tgz#6460bff91d2ac7745842eda1ee6a28fba4d2ffb2"
   integrity sha512-9i4Acm4pruQfJcpRrc2EauPBwkfDN0I9QTvJyZocIlKgoZwD6A6wH0PViH1AjOVG5CQCd1YI3tJd5XjYE1ElBw==
@@ -1205,7 +1205,7 @@
   dependencies:
     buffer "^6.0.3"
 
-"@solana/web3.js@^1.21.0", "@solana/web3.js@^1.32.0", "@solana/web3.js@^1.36.0", "@solana/web3.js@^1.50.1", "@solana/web3.js@^1.56.2", "@solana/web3.js@^1.63.1", "@solana/web3.js@^1.66.2", "@solana/web3.js@^1.68.0":
+"@solana/web3.js@^1.21.0", "@solana/web3.js@^1.32.0", "@solana/web3.js@^1.36.0", "@solana/web3.js@^1.50.1", "@solana/web3.js@^1.56.2", "@solana/web3.js@^1.63.1", "@solana/web3.js@^1.66.2", "@solana/web3.js@^1.68.0", "@solana/web3.js@^1.95.3":
   version "1.95.3"
   resolved "https://registry.yarnpkg.com/@solana/web3.js/-/web3.js-1.95.3.tgz#70b5f4d76823f56b5af6403da51125fffeb65ff3"
   integrity sha512-O6rPUN0w2fkNqx/Z3QJMB9L225Ex10PRDH8bTaIUPZXMPV0QP8ZpPvjQnXK+upUczlRgzHzd6SjKIha1p+I6og==
@@ -1524,6 +1524,11 @@ base-x@^4.0.0:
   resolved "https://registry.yarnpkg.com/base-x/-/base-x-4.0.0.tgz#d0e3b7753450c73f8ad2389b5c018a4af7b2224a"
   integrity sha512-FuwxlW4H5kh37X/oW59pwTzzTKRzfrrQwhmyspRM7swOEZcHtDZSCt45U6oKgtuFE+WYPblePMVIPR4RZrh/hw==
 
+base-x@^5.0.0:
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/base-x/-/base-x-5.0.0.tgz#6d835ceae379130e1a4cb846a70ac4746f28ea9b"
+  integrity sha512-sMW3VGSX1QWVFA6l8U62MLKz29rRfpTlYdCqLdpLo1/Yd4zZwSbnUaDfciIAowAqvq7YFnWq9hrhdg1KYgc1lQ==
+
 base64-js@^1.3.1, base64-js@^1.5.1:
   version "1.5.1"
   resolved "https://registry.yarnpkg.com/base64-js/-/base64-js-1.5.1.tgz#1b1b440160a5bf7ad40b650f095963481903930a"
@@ -1652,6 +1657,13 @@ bs58@^4.0.0, bs58@^4.0.1:
   integrity sha512-Ok3Wdf5vOIlBrgCvTq96gBkJw+JUEzdBgyaza5HLtPm7yTHkjRy8+JzNyHF7BHa0bNWOQIp3m5YF0nnFcOIKLw==
   dependencies:
     base-x "^3.0.2"
+
+bs58@^6.0.0:
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/bs58/-/bs58-6.0.0.tgz#a2cda0130558535dd281a2f8697df79caaf425d8"
+  integrity sha512-PD0wEnEYg6ijszw/u8s+iI3H17cTymlrwkKhDhPZq+Sokl3AU4htyBFTjAeNAlCCmg0f53g6ih3jATyCKftTfw==
+  dependencies:
+    base-x "^5.0.0"
 
 buffer-from@^1.0.0, buffer-from@^1.1.0:
   version "1.1.2"

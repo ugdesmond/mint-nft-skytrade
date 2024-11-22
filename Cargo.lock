@@ -1274,6 +1274,7 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "mpl-bubblegum",
+ "solana-program 1.18.23",
  "spl-account-compression",
 ]
 

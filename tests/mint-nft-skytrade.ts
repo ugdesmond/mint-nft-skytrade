@@ -30,12 +30,17 @@ import {
 } from '@solana/web3.js';
 import { assert } from 'chai';
 import { MintNftSkytrade } from '../target/types/mint_nft_skytrade';
+import { AssetExtractor } from '../utils/utils';
+import { DasApiAsset } from '@metaplex-foundation/digital-asset-standard-api';
+import bs58 from 'bs58';
 
 describe('mint-nft-skytrade', () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
   const wallet = provider.wallet as anchor.Wallet;
   const program = anchor.workspace.MintNftSkytrade as Program<MintNftSkytrade>;
+  let asset: any = '';
+  let assetIdd: any = '';
 
   // const connection = program.provider.connection
   const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
@@ -50,7 +55,6 @@ describe('mint-nft-skytrade', () => {
   const treeConfig = findTreeConfigPda(umi, {
     merkleTree: merkleTree.publicKey.toBase58() as UmiPK,
   })[0];
-
   // pda "tree creator", allows our program to update the tree
   const [treeOwner] = anchor.web3.PublicKey.findProgramAddressSync(
     [
@@ -59,11 +63,6 @@ describe('mint-nft-skytrade', () => {
     ],
     program.programId
   );
-
-  const centralAuthority = PublicKey.findProgramAddressSync(
-    [Buffer.from('central_authority')],
-    program.programId
-  )[0];
 
   const [bubblegumSigner, _] = PublicKey.findProgramAddressSync(
     // `collection_cpi` is a custom prefix required by the Bubblegum program
@@ -95,7 +94,6 @@ describe('mint-nft-skytrade', () => {
       sellerFeeBasisPoints: 0,
       isCollection: true,
     });
-    console.log('====nft location====', collectionNft.mintAddress);
 
     // transfer collection nft metadata update authority to pda
     await metaplex.nfts().update({
@@ -165,7 +163,6 @@ describe('mint-nft-skytrade', () => {
     const uri =
       'https://arweave.net/Apu1g7uhv52CMeQNfevoody9dVDmaWtQ3TklI6cbNRM';
     const sellerFeeBasisPoints = 0;
-
     const tx = await program.methods
       .mintCnft(name, symbol, uri, sellerFeeBasisPoints)
       .accounts({
@@ -185,5 +182,77 @@ describe('mint-nft-skytrade', () => {
       })
       .rpc({ commitment: 'confirmed' });
     console.log(`https://explorer.solana.com/tx/${tx}?cluster=devnet`);
+  });
+
+  it('Transfer Cnft', async () => {
+    const tree = new anchor.web3.PublicKey(
+      'FiPhovdwLREoNFyMAQE7VrzQDupAXtZaz2jR4oEqaDrs'
+    );
+
+    // when generating tree authority, we need to use the tree public key
+    // and the bubblegum program id as the seeds only bc is for transfer purposes.
+    //Donot use any other seeds
+    const [treeAuthority] = anchor.web3.PublicKey.findProgramAddressSync(
+      [tree.toBuffer()],
+      new PublicKey(MPL_BUBBLEGUM_PROGRAM_ID) // Change program.programId to MPL_BUBBLEGUM_PROGRAM_ID
+    );
+
+    const publicKeyBase58: UmiPK =
+      'FiPhovdwLREoNFyMAQE7VrzQDupAXtZaz2jR4oEqaDrs' as UmiPK;
+
+    const extractor = new AssetExtractor();
+    let { assetId, rpcAsset } = await extractor.extractAssetId(
+      0,
+      publicKeyBase58
+    );
+    asset = rpcAsset;
+    const receiver = new anchor.web3.PublicKey(
+      '67fchiX9QwUoG7pTGyeSMgqPBtSsDSEWydoLfCSULgZY'
+    );
+    const proof = await extractor.getAssetProof(assetId);
+
+    const proofPathAsAccounts = extractor.mapProof(proof);
+
+    const root: number[] = Array.from(proof.root as Uint8Array); // Convert Uint8Array to number[]
+    // Convert data_hash and creator_hash properly
+    const dataHash = [...bs58.decode(asset.compression.data_hash)];
+    const creatorHash = [...bs58.decode(asset.compression.creator_hash)];
+    const nonce = new anchor.BN(asset.compression.leaf_id);
+    const index = asset.compression.leaf_id;
+
+    // Add this before the transfer
+    const treeAccount = await ConcurrentMerkleTreeAccount.fromAccountAddress(
+      connection,
+      tree
+    );
+    const currentRoot = treeAccount.getCurrentRoot();
+
+    // Verify the proof root matches current tree root
+    if (
+      Buffer.from(proof.root).toString('hex') !== currentRoot.toString('hex')
+    ) {
+      throw new Error('Proof root does not match current tree root');
+    }
+
+    if (wallet.publicKey.toString() !== asset.ownership.owner) {
+      throw new Error('Wallet does not own this asset!');
+    }
+
+    // the leaf owner should be a public key not a pda
+    const tx = await program.methods
+      .transferNft(root, dataHash, creatorHash, nonce, index)
+      .accounts({
+        leafOwner: wallet.publicKey,
+        merkleTree: tree,
+        newLeafOwner: receiver,
+        treeAuthority,
+        bubblegumProgram: MPL_BUBBLEGUM_PROGRAM_ID,
+        compressionProgram: SPL_ACCOUNT_COMPRESSION_PROGRAM_ID,
+        logWrapper: SPL_NOOP_PROGRAM_ID,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      })
+      .remainingAccounts(proofPathAsAccounts)
+      .rpc();
+    console.log('Transfer successful:', tx);
   });
 });
